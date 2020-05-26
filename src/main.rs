@@ -14,7 +14,7 @@
 
 use clap::Clap;
 use git_version::git_version;
-use log::{debug, info, warn};
+use log::{debug, info};
 
 const GIT_VERSION: &str = git_version!(
     args = ["--tags", "--always", "--dirty=-modified"],
@@ -43,9 +43,6 @@ enum SubCommand {
 /// A subcommand for run
 #[derive(Clap)]
 struct RunOpts {
-    /// Sets grpc port of config service.
-    #[clap(short = "c", long = "config_port", default_value = "49999")]
-    config_port: String,
     /// Sets grpc port of this service.
     #[clap(short = "p", long = "port", default_value = "50002")]
     grpc_port: String,
@@ -64,36 +61,10 @@ fn main() {
         SubCommand::Run(opts) => {
             // init log4rs
             log4rs::init_file("executor-log4rs.yaml", Default::default()).unwrap();
-            info!("grpc port of config service: {}", opts.config_port);
             info!("grpc port of this service: {}", opts.grpc_port);
             let _ = run(opts);
         }
     }
-}
-
-use cita_ng_proto::config::{
-    config_service_client::ConfigServiceClient, Endpoint, RegisterEndpointInfo,
-};
-
-async fn register_endpoint(
-    config_port: String,
-    port: String,
-) -> Result<bool, Box<dyn std::error::Error>> {
-    let config_addr = format!("http://127.0.0.1:{}", config_port);
-    let mut client = ConfigServiceClient::connect(config_addr).await?;
-
-    // id of executor service is 2
-    let request = Request::new(RegisterEndpointInfo {
-        id: 2,
-        endpoint: Some(Endpoint {
-            hostname: "127.0.0.1".to_owned(),
-            port,
-        }),
-    });
-
-    let response = client.register_endpoint(request).await?;
-
-    Ok(response.into_inner().is_success)
 }
 
 use cita_ng_proto::blockchain::CompactBlock;
@@ -103,9 +74,6 @@ use cita_ng_proto::executor::{
     CallRequest, CallResponse,
 };
 use tonic::{transport::Server, Request, Response, Status};
-
-use std::time::Duration;
-use tokio::time;
 
 pub struct ExecutorServer {}
 
@@ -139,21 +107,6 @@ async fn run(opts: RunOpts) -> Result<(), Box<dyn std::error::Error>> {
     let addr = addr_str.parse()?;
 
     let executor_server = ExecutorServer::new();
-
-    tokio::spawn(async move {
-        let mut interval = time::interval(Duration::from_secs(3));
-        loop {
-            {
-                let ret = register_endpoint(opts.config_port.clone(), opts.grpc_port.clone()).await;
-                if ret.is_ok() && ret.unwrap() {
-                    info!("register endpoint success!");
-                    break;
-                }
-                warn!("register endpoint failed! Retrying");
-            }
-            interval.tick().await;
-        }
-    });
 
     info!("start grpc server!");
     Server::builder()
