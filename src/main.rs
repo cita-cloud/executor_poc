@@ -20,7 +20,7 @@ const GIT_VERSION: &str = git_version!(
     args = ["--tags", "--always", "--dirty=-modified"],
     fallback = "unknown"
 );
-const GIT_HOMEPAGE: &str = "https://github.com/rink1969/cita_ng_executor";
+const GIT_HOMEPAGE: &str = "https://github.com/cita-cloud/executor_poc";
 
 /// network service
 #[derive(Clap)]
@@ -44,7 +44,7 @@ enum SubCommand {
 #[derive(Clap)]
 struct RunOpts {
     /// Sets grpc port of this service.
-    #[clap(short = "p", long = "port", default_value = "50002")]
+    #[clap(short = 'p', long = "port", default_value = "50002")]
     grpc_port: String,
 }
 
@@ -67,9 +67,9 @@ fn main() {
     }
 }
 
-use cita_ng_proto::blockchain::CompactBlock;
-use cita_ng_proto::common::Hash;
-use cita_ng_proto::executor::{
+use cita_cloud_proto::blockchain::CompactBlock;
+use cita_cloud_proto::common::Hash;
+use cita_cloud_proto::executor::{
     executor_service_server::ExecutorService, executor_service_server::ExecutorServiceServer,
     CallRequest, CallResponse,
 };
