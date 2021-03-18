@@ -88,7 +88,7 @@ impl ExecutorService for ExecutorServer {
     async fn exec(&self, request: Request<CompactBlock>) -> Result<Response<Hash>, Status> {
         debug!("exec request: {:?}", request);
 
-        let hash = vec![0u8; 33];
+        let hash = vec![0u8; 32];
         let reply = Hash { hash };
         Ok(Response::new(reply))
     }
